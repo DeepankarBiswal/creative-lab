@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { useTexture, Html } from "@react-three/drei";
 import SaturnRings from "./SaturnRings";
 import Moon from "./Moon";
+import { getAngleForDate } from "./TimeControls";
 
 export default function Planet({
   name,
@@ -17,16 +18,25 @@ export default function Planet({
   description,
   speedMultiplier,
   onSelect,
+  simDate,
+  useRealPositions,
 }) {
   const orbitRef = useRef();
   const planetRef = useRef();
   const [hovered, setHovered] = useState(false);
-  const [angle, setAngle] = useState(() => Math.random() * Math.PI * 2);
+  const angleRef = useRef(Math.random() * Math.PI * 2);
 
   const tex = useTexture(texture);
 
   useFrame((_, delta) => {
-    setAngle((a) => a + delta * speed * speedMultiplier);
+    let angle;
+    if (useRealPositions && simDate) {
+      angle = getAngleForDate(name, simDate);
+    } else {
+      angleRef.current += delta * speed * speedMultiplier;
+      angle = angleRef.current;
+    }
+
     orbitRef.current.position.x = Math.cos(angle) * distance;
     orbitRef.current.position.z = Math.sin(angle) * distance;
     planetRef.current.rotation.y += delta * 0.5;
@@ -66,11 +76,11 @@ export default function Planet({
               style={{
                 background: "rgba(0,0,0,0.85)",
                 border: "1px solid rgba(255,255,255,0.15)",
-                borderRadius: "8px",
+                borderRadius: 8,
                 padding: "6px 12px",
                 color: "#fff",
                 fontFamily: "'Courier New', monospace",
-                fontSize: "11px",
+                fontSize: 11,
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
                 backdropFilter: "blur(8px)",
@@ -79,7 +89,7 @@ export default function Planet({
               <div
                 style={{
                   fontWeight: "bold",
-                  fontSize: "13px",
+                  fontSize: 13,
                   color,
                   marginBottom: 2,
                 }}
