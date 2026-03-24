@@ -1,11 +1,2 @@
-#root {
-  width: 100vw;
-  height: 100vh;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  margin: 0;
-  background-color: #0a0a0a; /* Dark background like Noomo Labs */
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #000; }
