@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useTexture, Html } from "@react-three/drei";
 import SaturnRings from "./SaturnRings";
+import Moon from "./Moon";
 
 export default function Planet({
   name,
@@ -12,13 +13,15 @@ export default function Planet({
   speed,
   tilt,
   hasRings,
+  hasMoon,
   description,
   speedMultiplier,
+  onSelect,
 }) {
   const orbitRef = useRef();
   const planetRef = useRef();
   const [hovered, setHovered] = useState(false);
-  const [angle, setAngle] = useState(() => Math.random() * Math.PI * 2); // stagger start
+  const [angle, setAngle] = useState(() => Math.random() * Math.PI * 2);
 
   const tex = useTexture(texture);
 
@@ -41,28 +44,33 @@ export default function Planet({
             setHovered(false);
             document.body.style.cursor = "default";
           }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect();
+          }}
         >
           <sphereGeometry args={[size, 64, 64]} />
           <meshStandardMaterial
             map={tex}
             emissive={hovered ? color : "#000000"}
-            emissiveIntensity={hovered ? 0.3 : 0}
+            emissiveIntensity={hovered ? 0.4 : 0}
           />
         </mesh>
 
         {hasRings && <SaturnRings />}
+        {hasMoon && <Moon />}
 
         {hovered && (
           <Html center distanceFactor={12}>
             <div
               style={{
                 background: "rgba(0,0,0,0.85)",
-                border: "1px solid rgba(255,255,255,0.2)",
+                border: "1px solid rgba(255,255,255,0.15)",
                 borderRadius: "8px",
-                padding: "8px 14px",
+                padding: "6px 12px",
                 color: "#fff",
                 fontFamily: "'Courier New', monospace",
-                fontSize: "12px",
+                fontSize: "11px",
                 pointerEvents: "none",
                 whiteSpace: "nowrap",
                 backdropFilter: "blur(8px)",
@@ -71,14 +79,17 @@ export default function Planet({
               <div
                 style={{
                   fontWeight: "bold",
-                  fontSize: "14px",
-                  color: "#f0c060",
-                  marginBottom: "2px",
+                  fontSize: "13px",
+                  color,
+                  marginBottom: 2,
                 }}
               >
                 {name}
               </div>
-              <div style={{ opacity: 0.7 }}>{description}</div>
+              <div style={{ opacity: 0.6 }}>{description}</div>
+              <div style={{ opacity: 0.4, fontSize: 10, marginTop: 2 }}>
+                click to inspect
+              </div>
             </div>
           </Html>
         )}
