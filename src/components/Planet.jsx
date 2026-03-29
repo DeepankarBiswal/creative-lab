@@ -4,6 +4,7 @@ import { useTexture, Html } from "@react-three/drei";
 import SaturnRings from "./SaturnRings";
 import Moon from "./Moon";
 import { getAngleForDate } from "./TimeControls";
+import * as THREE from "three";
 
 export default function Planet({
   name,
@@ -56,7 +57,10 @@ export default function Planet({
           }}
           onClick={(e) => {
             e.stopPropagation();
-            onSelect();
+            // Get actual world position of the planet at this exact moment
+            const worldPos = new THREE.Vector3();
+            orbitRef.current.getWorldPosition(worldPos);
+            onSelect(worldPos);
           }}
         >
           <sphereGeometry args={[size, 64, 64]} />

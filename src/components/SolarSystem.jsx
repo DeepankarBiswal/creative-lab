@@ -10,30 +10,39 @@ import AsteroidBelt from "./AsteroidBelt";
 import Nebula from "./Nebula";
 import Comet from "./Comet";
 import InfoPanel from "./InfoPanel";
+import SurfaceView from "./SurfaceView";
 import TimeControls from "./TimeControls";
 import HUD from "./HUD";
 import AudioManager from "./AudioManager";
 import { playWhoosh, playClick } from "./AudioManager";
 import { PLANETS } from "../data/planets";
 
-function CameraController({ target, onArrived }) {
+function CameraController({ target, onArrived, controlsRef }) {
   const { camera } = useThree();
   const animating = useRef(false);
   const targetPos = useRef(new THREE.Vector3());
+  const lookAt = useRef(new THREE.Vector3());
 
   if (target) {
     animating.current = true;
+    // Offset camera to the side and slightly above the planet
     targetPos.current.set(
       target.x + target.offset,
-      target.y + target.offset * 0.5,
+      target.y + target.offset * 0.4,
       target.z + target.offset,
     );
+    lookAt.current.set(target.x, target.y, target.z);
   }
 
   useFrame(() => {
     if (!animating.current || !target) return;
-    camera.position.lerp(targetPos.current, 0.04);
-    if (camera.position.distanceTo(targetPos.current) < 0.3) {
+    camera.position.lerp(targetPos.current, 0.05);
+    // Also smoothly move orbit controls target toward the planet
+    if (controlsRef?.current) {
+      controlsRef.current.target.lerp(lookAt.current, 0.05);
+      controlsRef.current.update();
+    }
+    if (camera.position.distanceTo(targetPos.current) < 0.4) {
       animating.current = false;
       onArrived();
     }
@@ -51,25 +60,35 @@ function Scene({
   simDate,
   useRealPositions,
   onCometPass,
+  controlsRef,
 }) {
   return (
     <>
-      <ambientLight intensity={0.15} />
+      <ambientLight intensity={0.6} />
       <pointLight
         position={[0, 0, 0]}
-        intensity={4}
+        intensity={8}
         color="#fff5c0"
-        distance={200}
-        decay={1.2}
+        distance={300}
+        decay={1.0}
+      />
+      // Add this right below your pointLight
+      <pointLight
+        position={[0, 0, 0]}
+        intensity={1.5}
+        color="#334466"
+        distance={300}
+        decay={1.0}
       />
       <Nebula />
       <Stars
         // radius={300}
-        // depth={80}
-        // count={3000}
-        // factor={4}
-        // saturation={0.5}
+        // depth={50}
+        // count={4000}
+        // factor={3}
+        // saturation={0}
         // fade
+        // speed={0.5}
       />
       <Sun />
       <AsteroidBelt />
@@ -84,10 +103,14 @@ function Scene({
           speedMultiplier={speedMultiplier}
           simDate={simDate}
           useRealPositions={useRealPositions}
-          onSelect={() => onPlanetSelect(p)}
+          onSelect={(worldPos) => onPlanetSelect(p, worldPos)}
         />
       ))}
-      <CameraController target={cameraTarget} onArrived={onCameraArrived} />
+      <CameraController
+        target={cameraTarget}
+        onArrived={onCameraArrived}
+        controlsRef={controlsRef}
+      />
       <mesh onClick={onBackgroundClick}>
         <sphereGeometry args={[400, 8, 8]} />
         <meshBasicMaterial side={THREE.BackSide} transparent opacity={0} />
@@ -104,6 +127,7 @@ export default function SolarSystem() {
   const [simSpeed, setSimSpeed] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [useRealPositions, setUseRealPositions] = useState(false);
+  const [landingPlanet, setLandingPlanet] = useState(null);
   const controlsRef = useRef();
   const BASE = import.meta.env.BASE_URL;
 
@@ -118,14 +142,15 @@ export default function SolarSystem() {
     },
   });
 
-  const handlePlanetSelect = (planet) => {
+  const handlePlanetSelect = (planet, worldPos) => {
     playClick(BASE);
     setSelectedPlanet(planet);
-    const angle = Math.random() * Math.PI * 2;
+
+    // Use actual world position instead of a guessed angle
     setCameraTarget({
-      x: Math.cos(angle) * planet.distance,
-      y: 0,
-      z: Math.sin(angle) * planet.distance,
+      x: worldPos.x,
+      y: worldPos.y,
+      z: worldPos.z,
       offset: planet.size * 6 + 3,
     });
     if (controlsRef.current) controlsRef.current.enabled = false;
@@ -134,7 +159,12 @@ export default function SolarSystem() {
   const handleClose = () => {
     setSelectedPlanet(null);
     setCameraTarget(null);
-    if (controlsRef.current) controlsRef.current.enabled = true;
+    if (controlsRef.current) {
+      controlsRef.current.enabled = true;
+      // Reset look target back to solar system center
+      controlsRef.current.target.lerp(new THREE.Vector3(0, 0, 0), 1);
+      controlsRef.current.update();
+    }
   };
 
   const handleCometPass = () => {
@@ -161,7 +191,14 @@ export default function SolarSystem() {
         audioEnabled={audioEnabled}
         onToggleAudio={() => setAudioEnabled((a) => !a)}
       />
-      <InfoPanel planet={selectedPlanet} onClose={handleClose} />
+      <InfoPanel
+        planet={selectedPlanet}
+        onClose={handleClose}
+        onLand={() => {
+          setLandingPlanet(selectedPlanet);
+          setSelectedPlanet(null);
+        }}
+      />
 
       {/* Real positions toggle */}
       <div
@@ -219,6 +256,7 @@ export default function SolarSystem() {
             simDate={simDate}
             useRealPositions={useRealPositions}
             onCometPass={handleCometPass}
+            controlsRef={controlsRef}
           />
         </Suspense>
         <OrbitControls
@@ -230,6 +268,12 @@ export default function SolarSystem() {
           zoomSpeed={0.6}
         />
       </Canvas>
+      {landingPlanet && (
+        <SurfaceView
+          planet={landingPlanet}
+          onExit={() => setLandingPlanet(null)}
+        />
+      )}
     </div>
   );
 }

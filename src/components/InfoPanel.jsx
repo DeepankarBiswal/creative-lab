@@ -1,4 +1,4 @@
-export default function InfoPanel({ planet, onClose }) {
+export default function InfoPanel({ planet, onClose, onLand }) {
   if (!planet) return null;
   const { name, color, description, facts } = planet;
 
@@ -126,12 +126,48 @@ export default function InfoPanel({ planet, onClose }) {
         style={{
           padding: "16px 24px",
           borderTop: "1px solid rgba(255,255,255,0.1)",
-          fontSize: 10,
-          color: "rgba(255,255,255,0.25)",
-          letterSpacing: "0.05em",
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
         }}
       >
-        CLICK ELSEWHERE IN SPACE TO DISMISS
+        {/* Land button */}
+        <button
+          onClick={() => onLand && onLand()}
+          style={{
+            width: "100%",
+            padding: "11px 0",
+            background: `linear-gradient(135deg, ${color}22, ${color}44)`,
+            border: `1px solid ${color}66`,
+            color: "#fff",
+            borderRadius: 10,
+            fontFamily: "'Courier New', monospace",
+            fontSize: 12,
+            letterSpacing: "0.2em",
+            cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = `${color}55`;
+            e.target.style.borderColor = color;
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = `linear-gradient(135deg, ${color}22, ${color}44)`;
+            e.target.style.borderColor = `${color}66`;
+          }}
+        >
+          🌍 LAND ON {name.toUpperCase()}
+        </button>
+        <div
+          style={{
+            fontSize: 10,
+            color: "rgba(255,255,255,0.25)",
+            letterSpacing: "0.05em",
+            textAlign: "center",
+          }}
+        >
+          CLICK ELSEWHERE IN SPACE TO DISMISS
+        </div>
       </div>
     </div>
   );
